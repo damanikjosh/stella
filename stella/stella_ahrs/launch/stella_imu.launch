@@ -1,0 +1,5 @@
+<launch>
+  <node name="stella_ahrs_node" pkg="stella_ahrs"  type="stella_ahrs_node" output="screen">
+    <remap from="odom" to="imu/odom"/>
+  </node>
+</launch>

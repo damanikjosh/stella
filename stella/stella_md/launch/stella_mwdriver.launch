@@ -1,0 +1,5 @@
+<launch>
+  <node name="stella_md_node" pkg="stella_md"  type="stella_md_node" output="screen">
+<!--     <remap from="odom" to="md/odom"/> -->
+  </node>
+</launch>

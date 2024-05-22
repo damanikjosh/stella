@@ -1,0 +1,215 @@
+<?xml version="1.0" ?>
+<robot name="stella" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="PI" value="3.1415926535897931"/>
+  <xacro:property name="bodyHeight" value="0.04836"/>
+  <xacro:property name="bodyLength" value="0.18016"/>
+  <xacro:property name="bodyWidth" value="0.13962"/>
+  <xacro:property name="bodyMass" value="1.47075"/>
+  <xacro:property name="bodyOrigin" value="0.0 0.0 0.0395"/>
+
+  <xacro:property name="imuHeight" value="0.0082"/>
+  <xacro:property name="imuLength" value="0.034"/>
+  <xacro:property name="imuWidth" value="0.039"/>
+  <xacro:property name="imuOrigin" value="${0.01 + imuLength/2 - bodyLength/2} 0.0 ${bodyHeight/2 + imuHeight/2}"/>
+
+  <xacro:property name="scanHeight" value="0.0255"/>
+  <xacro:property name="scanDiameter" value="0.0656"/>
+  <xacro:property name="scanOrigin" value="${bodyLength/2 - 0.017 - 0.021} 0.0 ${bodyHeight/2 + 0.0409 + 0.027 + 0.0065 + scanHeight/2}"/>
+
+  <xacro:property name="axleLength" value="0.1878"/>
+  <xacro:property name="axleOriginX" value="${bodyLength/2 - 0.0335}"/>
+  <xacro:property name="axleOriginZ" value="${bodyHeight/2 - 0.03036}"/>
+
+  <xacro:property name="wheelRadius" value="0.0311"/>
+  <xacro:property name="wheelWidth" value="0.0216"/>
+
+  <xacro:property name="casterRadius" value="0.006"/>
+  <xacro:property name="casterOrigin" value="-0.06008 0.0 ${axleOriginZ - wheelRadius + casterRadius}"/>
+
+  <xacro:include filename="$(find stella_description)/urdf/stella.gazebo.xacro" />
+
+  <xacro:property name="black" value="0.0 0.0 0.0 1.0"/>
+  <xacro:property name="dark" value="0.3 0.3 0.3 1.0"/>
+  <xacro:property name="light_black" value="0.4 0.4 0.4 1.0"/>
+  <xacro:property name="blue" value="0.2 0.2 0.8 1.0"/>
+  <xacro:property name="green" value="0.0 0.8 0.0 1.0"/>
+  <xacro:property name="grey" value="0.5 0.5 0.5 1.0"/>
+  <xacro:property name="orange" value="1.0 0.4235 0.0392 1.0"/>
+  <xacro:property name="brown" value="0.8706 0.8118 0.7647 1.0"/>
+  <xacro:property name="red" value="0.8 0.0 0.0 1.0"/>
+  <xacro:property name="white" value="1.0 1.0 1.0 1.0"/>
+
+  <xacro:macro name="mat" params="name rgba">
+    <material name="${name}">
+      <color rgba="${rgba}"/>
+    </material>
+  </xacro:macro>
+
+  <xacro:mat name="black" rgba="${black}"/>
+  <xacro:mat name="dark" rgba="${dark}"/>
+  <xacro:mat name="light_black" rgba="${light_black}"/>
+  <xacro:mat name="blue" rgba="${blue}"/>
+  <xacro:mat name="green" rgba="${green}"/>
+  <xacro:mat name="grey" rgba="${grey}"/>
+  <xacro:mat name="orange" rgba="${orange}"/>
+  <xacro:mat name="brown" rgba="${brown}"/>
+  <xacro:mat name="red" rgba="${red}"/>
+  <xacro:mat name="white" rgba="${white}"/>
+
+  <link name="base_footprint"/>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link" />
+    <origin xyz="${bodyOrigin}" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/stella_body.stl"/>
+      </geometry>
+      <material name="light_black"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="${bodyLength} ${bodyWidth} ${bodyHeight}"/>
+      </geometry>
+    </collision>
+    
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="${bodyMass}"/>
+      <inertia ixx="${1/12*bodyMass*(bodyWidth*bodyWidth + bodyHeight*bodyHeight)}" ixy="0.0" ixz="0.0"
+               iyy="${1/12*bodyMass*(bodyLength*bodyLength + bodyHeight*bodyHeight)}" iyz="0.0"
+               izz="${1/12*bodyMass*(bodyLength*bodyLength + bodyWidth*bodyWidth)}"/>
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="${imuOrigin}" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="imu_link" />
+
+  <joint name="scan_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_scan"/>
+    <origin xyz="${scanOrigin}" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="base_scan">
+    <visual>
+      <origin xyz="0.0 0.0 ${-scanHeight/2-0.0065}" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/ydlidar_x4.stl"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 ${-scanHeight/2-0.0065}" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/ydlidar_x4.stl"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.189" />
+      <inertia ixx="0.00015856" ixy="0.0" ixz="0.0"
+               iyy="0.00015856" iyz="0.0"
+               izz="0.00028586"/>
+    </inertial>
+  </link>
+
+  <joint name="caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_link"/>
+    <origin xyz="${casterOrigin}" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="caster_link">
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <sphere radius="${casterRadius}"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="wheel_l_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_l_link"/>
+    <origin xyz="${axleOriginX} ${axleLength/2} ${axleOriginZ}" rpy="${-PI/2} 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <link name="wheel_l_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/stella_wheel.stl"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder radius="${wheelRadius}" length="${wheelWidth}"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0443" />
+      <inertia ixx="1.2E-05" ixy="0.0" ixz="0.0"
+               iyy="1.2E-05" iyz="0.0"
+               izz="2.1E-05"/>
+    </inertial>
+  </link>
+
+  <joint name="wheel_r_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_r_link"/>
+    <origin xyz="${axleOriginX} ${-axleLength/2} ${axleOriginZ}" rpy="${-PI/2} 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <link name="wheel_r_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/stella_wheel.stl"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="${PI} 0.0 0.0"/>
+      <geometry>
+        <cylinder radius="${wheelRadius}" length="${wheelWidth}"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0443" />
+      <inertia ixx="1.2E-05" ixy="0.0" ixz="0.0"
+               iyy="1.2E-05" iyz="0.0"
+               izz="2.1E-05"/>
+    </inertial>
+  </link>
+
+</robot>
