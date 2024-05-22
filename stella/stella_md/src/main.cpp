@@ -52,11 +52,11 @@ stellaN1_node::stellaN1_node()
 {
 
 //  ahrs_sub = n.subscribe("imu/yaw", 1, &stellaN1_node::ahrs_yaw_data_callback, this);
-  sub = n.subscribe("cmd_vel", 10, &stellaN1_node::command_velocity_callback, this);
+  sub = n.subscribe("cmd_vel", 1, &stellaN1_node::command_velocity_callback, this);
 
   chatter_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
 
-  timer = n.createTimer(ros::Duration(0.05),&stellaN1_node::serial_callback,this);
+  timer = n.createTimer(ros::Duration(0.033333),&stellaN1_node::serial_callback,this);
 
   current_time = ros::Time::now();
   last_time = ros::Time::now();
