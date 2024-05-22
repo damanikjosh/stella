@@ -13,11 +13,11 @@ enum axis
 
 void *MwAhrsRead(void *arg)
 {
-    
+
     while (RUN)
     {
         unsigned char data[8];
-        
+
         if (AHRS_Read(data))
         {
 
@@ -26,7 +26,7 @@ void *MwAhrsRead(void *arg)
             case ACC:
                 acc_value[axis::x] = (int16_t)(((int)(unsigned char)data[2] | (int)(unsigned char)data[3] << 8)) / 1000.0;
                 acc_value[axis::y] = (int16_t)(((int)(unsigned char)data[4] | (int)(unsigned char)data[5] << 8)) / 1000.0;
-                acc_value[axis::z] = (int16_t)(((int)(unsigned char)data[6] | (int)(unsigned char)data[7] << 8)) / 1000.0;           
+                acc_value[axis::z] = (int16_t)(((int)(unsigned char)data[6] | (int)(unsigned char)data[7] << 8)) / 1000.0;
                 break;
 
             case GYO:
@@ -53,7 +53,7 @@ void *MwAhrsRead(void *arg)
 }
 
 
-MwAhrsRosDriver::MwAhrsRosDriver() 
+MwAhrsRosDriver::MwAhrsRosDriver()
 {
 
     n.getParam("linear_acceleration_stddev", linear_acceleration_stddev_);
@@ -67,10 +67,10 @@ MwAhrsRosDriver::MwAhrsRosDriver()
     imu_mag_pub_ = n.advertise<sensor_msgs::MagneticField>("imu/mag", 10);
     imu_yaw_pub_ = n.advertise<std_msgs::Float64>("imu/yaw", 10);
 
-    timer = n.createTimer(ros::Duration(0.05),&MwAhrsRosDriver::serial_callback,this);
+    timer = n.createTimer(ros::Duration(0.02),&MwAhrsRosDriver::serial_callback,this);
 }
 
-MwAhrsRosDriver::~MwAhrsRosDriver() 
+MwAhrsRosDriver::~MwAhrsRosDriver()
 {
   MW_Serial_DisConnect();
   run_bool = false;
@@ -82,10 +82,43 @@ MwAhrsRosDriver::~MwAhrsRosDriver()
 void MwAhrsRosDriver::serial_callback(const ros::TimerEvent& event)
 {
   if(RUN)
-  { 
+  {
 
 //    odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
-    pthread_create(&tid, NULL, &MwAhrsRead, NULL);
+    unsigned char data[8];
+
+    if (AHRS_Read(data))
+    {
+
+       switch ((int)(unsigned char)data[1])
+        {
+        case ACC:
+            acc_value[axis::x] = (int16_t)(((int)(unsigned char)data[2] | (int)(unsigned char)data[3] << 8)) / 1000.0;
+            acc_value[axis::y] = (int16_t)(((int)(unsigned char)data[4] | (int)(unsigned char)data[5] << 8)) / 1000.0;
+            acc_value[axis::z] = (int16_t)(((int)(unsigned char)data[6] | (int)(unsigned char)data[7] << 8)) / 1000.0;
+            break;
+
+        case GYO:
+            gyr_value[axis::x] = (int16_t)(((int)(unsigned char)data[2] | (int)(unsigned char)data[3] << 8)) / 10.0;
+            gyr_value[axis::y] = (int16_t)(((int)(unsigned char)data[4] | (int)(unsigned char)data[5] << 8)) / 10.0;
+            gyr_value[axis::z] = (int16_t)(((int)(unsigned char)data[6] | (int)(unsigned char)data[7] << 8)) / 10.0;
+            break;
+
+        case DEG:
+            deg_value[axis::x] = (int16_t)(((int)(unsigned char)data[2] | (int)(unsigned char)data[3] << 8)) / 100.0;
+            deg_value[axis::y] = (int16_t)(((int)(unsigned char)data[4] | (int)(unsigned char)data[5] << 8)) / 100.0;
+            deg_value[axis::z] = (int16_t)(((int)(unsigned char)data[6] | (int)(unsigned char)data[7] << 8)) / 100.0;
+            break;
+
+        case MAG:
+            mag_value[axis::x] = (int16_t)(((int)(unsigned char)data[2] | (int)(unsigned char)data[3] << 8)) / 10.0;
+            mag_value[axis::y] = (int16_t)(((int)(unsigned char)data[4] | (int)(unsigned char)data[5] << 8)) / 10.0;
+            mag_value[axis::z] = (int16_t)(((int)(unsigned char)data[6] | (int)(unsigned char)data[7] << 8)) / 10.0;
+            break;
+
+        }
+    }
+
 
     auto imu_data_raw_msg = sensor_msgs::Imu();
     auto imu_data_msg = sensor_msgs::Imu();
@@ -120,12 +153,12 @@ void MwAhrsRosDriver::serial_callback(const ros::TimerEvent& event)
 
     imu_data_msg.orientation_covariance[0] =
     imu_data_msg.orientation_covariance[4] =
-    imu_data_msg.orientation_covariance[8] = 
+    imu_data_msg.orientation_covariance[8] =
     orientation_cov;
 
     imu_magnetic_msg.magnetic_field_covariance[0] =
     imu_magnetic_msg.magnetic_field_covariance[4] =
-    imu_magnetic_msg.magnetic_field_covariance[8] = 
+    imu_magnetic_msg.magnetic_field_covariance[8] =
     magnetic_field_cov;
 
     double roll, pitch, yaw;
@@ -177,7 +210,7 @@ void MwAhrsRosDriver::serial_callback(const ros::TimerEvent& event)
     imu_magnetic_msg.magnetic_field.z = mag_value[axis::z] / convertor_ut2t;
 
     // original data used the celsius unit
-    imu_yaw_msg.data = deg_value[axis::z]; 
+    imu_yaw_msg.data = deg_value[axis::z];
 
 
     imu_data_raw_pub_.publish(std::move(imu_data_raw_msg));
@@ -189,7 +222,7 @@ void MwAhrsRosDriver::serial_callback(const ros::TimerEvent& event)
 //    imu.header.stamp = ros::Time::now();
 //    imu_pub_.publish(imu);
 
-   
+
     if (publish_tf_)
     {
       geometry_msgs::TransformStamped tf;
@@ -203,7 +236,7 @@ void MwAhrsRosDriver::serial_callback(const ros::TimerEvent& event)
 
       odom_broadcaster.sendTransform(tf);
     }
-  
+
   }
 }
 
@@ -237,7 +270,7 @@ int main(int argc, char **argv)
         sel 1 - Z축 캘리브레이션
         sel 2 - 각도리셋
         sel 3 - Z축 캘리브레이션및 각도리셋
-    
+
     */
     RUN = true;
 
